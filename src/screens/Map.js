@@ -2,9 +2,13 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import { connect } from 'react-redux'
-import { times, get } from 'lodash'
+import { times } from 'lodash'
 import Chance from 'chance'
 
+import monster from 'assets/monster.gif'
+import rogue from 'assets/rogue.gif'
+import grass from 'assets/textures/grass1.png'
+import tree from 'assets/textures/tree1.png'
 import * as Selectors from 'state/selectors'
 import * as PlayerActions from 'state/player/actions'
 import { mapType } from 'state/player/reducers'
@@ -27,10 +31,21 @@ const RowContainer = styled.div`
 `
 
 const TileContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
   width: ${tileSize}px;
   height: ${tileSize}px;
-  border: 1px solid gray;
+  ${'' /* border: 1px solid gray; */};
   box-sizing: border-box;
+  background: no-repeat center / cover url(${grass});
+`
+
+const Tree = styled.img`
+  width: 150%;
+  margin-bottom: 10px;
+  z-index: 10;
 `
 
 const PlayerContainer = styled.div`
@@ -47,33 +62,33 @@ const PlayerContainer = styled.div`
 
 const Player = styled.div`
   position: absolute;
-  top: 50%;
+  top: 25%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 30px;
-  height: 30px;
-  background-color: limegreen;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  background: no-repeat center / 200% url(${rogue});
+  z-index: 1;
 `
 
 const Enemy = Player.extend`
-  background-color: orangered;
+  top: 50%;
+  background: no-repeat center / 200% url(${monster});
 `
-
-/* TYPES */
-const playerCoordsType = PropTypes.shape({
-  x: PropTypes.number,
-  y: PropTypes.number,
-})
 
 /* PRESENTATION */
 class Tile extends React.Component {
   static propTypes = {
-    isPlayerHere: PropTypes.bool,
+    isTreeHere: PropTypes.boolean,
   }
 
   render() {
-    return <TileContainer />
+    const { isTreeHere } = this.props
+    return (
+      <TileContainer src={grass}>
+        {isTreeHere && <Tree src={tree} />}
+      </TileContainer>
+    )
   }
 }
 
@@ -81,22 +96,23 @@ class Row extends React.Component {
   static propTypes = {
     width: PropTypes.number.isRequired,
     y: PropTypes.number.isRequired,
-    playerCoords: playerCoordsType,
+    collisions: PropTypes.array,
   }
 
   render() {
-    const { width, y, playerCoords } = this.props
+    const { width, y, collisions } = this.props
     return (
       <RowContainer>
-        {times(
-          width,
-          index =>
-            index + 1 === get(playerCoords, 'x') ? (
-              <Tile key={index + 1} x={index + 1} y={y} isPlayerHere />
-            ) : (
-              <Tile key={index + 1} x={index + 1} y={y} />
+        {times(width, index => {
+          if (
+            collisions.find(
+              collision => collision.x === index && collision.y === y
             )
-        )}
+          ) {
+            return <Tile key={index} x={index} y={y} isTreeHere />
+          }
+          return <Tile key={index} x={index} y={y} />
+        })}
       </RowContainer>
     )
   }
@@ -123,7 +139,7 @@ class Map extends React.Component {
 
   componentDidMount() {
     window.addEventListener('keydown', this.handleKeyDown)
-    this.setState({ interval: setInterval(this.chase, 1000) })
+    this.setState({ interval: setInterval(this.keepDistance, 500) })
   }
 
   componentWillUnmount() {
@@ -131,28 +147,69 @@ class Map extends React.Component {
     clearInterval(this.state.interval)
   }
 
-  chase = () => {
-    const xDiff = Math.abs(this.props.playerX - this.state.enemyX)
-    const yDiff = Math.abs(this.props.playerY - this.state.enemyY)
-    const shouldMoveRight = this.props.playerX > this.state.enemyX
-    const shouldMoveDown = this.props.playerY > this.state.enemyY
+  getEnemyDistance = () => ({
+    x: Math.abs(this.props.playerX - this.state.enemyX),
+    y: Math.abs(this.props.playerY - this.state.enemyY),
+  })
+
+  moveEnemy = (isHorizontalMove, shouldMoveRight, shouldMoveDown) => {
     const horizontalMove = shouldMoveRight
       ? this.state.enemyX + 1
       : this.state.enemyX - 1
-    const verticalMove = shouldMoveDown
+    let verticalMove = shouldMoveDown
       ? this.state.enemyY + 1
       : this.state.enemyY - 1
-    let newEnemyCoords =
-      new Chance().coin() === 'heads'
-        ? { enemyX: horizontalMove, enemyY: this.state.enemyY }
-        : { enemyX: this.state.enemyX, enemyY: verticalMove }
-    if (xDiff !== yDiff) {
+    if (shouldMoveDown === undefined) {
+      verticalMove =
+        new Chance().coin() === 'heads'
+          ? this.state.enemyY + 1
+          : this.state.enemyY - 1
+    }
+    let newEnemyCoords = isHorizontalMove
+      ? { enemyX: horizontalMove, enemyY: this.state.enemyY }
+      : { enemyX: this.state.enemyX, enemyY: verticalMove }
+    if (isHorizontalMove === undefined) {
       newEnemyCoords =
-        xDiff > yDiff
+        new Chance().coin() === 'heads'
           ? { enemyX: horizontalMove, enemyY: this.state.enemyY }
           : { enemyX: this.state.enemyX, enemyY: verticalMove }
     }
     this.setState({ ...newEnemyCoords })
+  }
+
+  chase = () => {
+    const enemyDistance = this.getEnemyDistance()
+    const shouldMoveRight = this.props.playerX > this.state.enemyX
+    const shouldMoveDown = this.props.playerY > this.state.enemyY
+    let isHorizontalMove
+    if (enemyDistance.x !== enemyDistance.y) {
+      isHorizontalMove = enemyDistance.x > enemyDistance.y
+    }
+    this.moveEnemy(isHorizontalMove, shouldMoveRight, shouldMoveDown)
+  }
+
+  runAway = () => {
+    const enemyDistance = this.getEnemyDistance()
+    const shouldMoveRight = this.props.playerX < this.state.enemyX
+    const shouldMoveDown = this.props.playerY < this.state.enemyY
+    let isHorizontalMove
+    if (enemyDistance.x !== enemyDistance.y) {
+      isHorizontalMove = enemyDistance.x < enemyDistance.y
+    }
+    this.moveEnemy(isHorizontalMove, shouldMoveRight, shouldMoveDown)
+  }
+
+  keepDistance = () => {
+    const enemyDistance = this.getEnemyDistance()
+    const distanceToKeep = 2
+    if (enemyDistance.x > distanceToKeep || enemyDistance.y > distanceToKeep) {
+      this.chase()
+    } else if (
+      enemyDistance.x < distanceToKeep &&
+      enemyDistance.y < distanceToKeep
+    ) {
+      this.runAway()
+    }
   }
 
   handleKeyDown = e => {
@@ -177,20 +234,14 @@ class Map extends React.Component {
     console.log(playerX, playerY)
     return (
       <Container>
-        {times(
-          currentMap.height,
-          index =>
-            index + 1 === playerY ? (
-              <Row
-                key={index + 1}
-                width={currentMap.width}
-                y={index + 1}
-                playerCoords={{ x: playerX, y: playerY }}
-              />
-            ) : (
-              <Row key={index + 1} width={currentMap.width} y={index + 1} />
-            )
-        )}
+        {times(currentMap.height, index => (
+          <Row
+            key={index}
+            width={currentMap.width}
+            collisions={currentMap.collisions}
+            y={index}
+          />
+        ))}
         <PlayerContainer x={playerX} y={playerY}>
           <Player />
         </PlayerContainer>
