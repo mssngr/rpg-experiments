@@ -37,7 +37,7 @@ const TileContainer = styled.div`
   align-items: center;
   width: ${tileSize}px;
   height: ${tileSize}px;
-  ${'' /* border: 1px solid gray; */};
+  border: 1px solid gray;
   box-sizing: border-box;
   background: no-repeat center / cover url(${grass});
 `
@@ -139,7 +139,7 @@ class Map extends React.Component {
 
   componentDidMount() {
     window.addEventListener('keydown', this.handleKeyDown)
-    this.setState({ interval: setInterval(this.keepDistance, 500) })
+    this.setState({ interval: setInterval(this.chase, 500) })
   }
 
   componentWillUnmount() {
