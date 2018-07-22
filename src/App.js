@@ -3,6 +3,7 @@ import { Provider } from 'react-redux'
 import { createStore } from 'redux'
 
 import Map from 'screens/Map'
+import Player from 'components/Player'
 import reducer from 'state/reducers'
 
 export const store = createStore(
@@ -14,7 +15,17 @@ class App extends Component {
   render() {
     return (
       <Provider store={store}>
-        <Map />
+        <div
+          style={{
+            position: 'relative',
+            width: '100vw',
+            height: '100vh',
+            overflow: 'show',
+          }}
+        >
+          <Map />
+          <Player />
+        </div>
       </Provider>
     )
   }

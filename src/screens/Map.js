@@ -3,25 +3,29 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import { connect } from 'react-redux'
 import { times } from 'lodash'
-import Chance from 'chance'
 
-import monster from 'assets/monster.gif'
-import rogue from 'assets/rogue.gif'
 import grass from 'assets/textures/grass1.png'
 import tree from 'assets/textures/tree1.png'
 import * as Selectors from 'state/selectors'
-import * as PlayerActions from 'state/player/actions'
 import { mapType } from 'state/player/reducers'
 
 const tileSize = 60
 
 /* STYLES */
 const Container = styled.div`
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(
+    calc(-${tileSize * 0.5}px - ${props => props.x * tileSize}px),
+    calc(-${tileSize * 0.5}px - ${props => props.y * tileSize}px)
+  );
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
   background-color: black;
+  transition-property: transform;
+  transition-duration: 200ms;
 `
 
 const RowContainer = styled.div`
@@ -46,34 +50,6 @@ const Tree = styled.img`
   width: 150%;
   margin-bottom: 10px;
   z-index: 10;
-`
-
-const PlayerContainer = styled.div`
-  position: absolute;
-  left: ${props => props.x * tileSize}px;
-  top: ${props => props.y * tileSize}px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: ${tileSize}px;
-  height: ${tileSize}px;
-  transition: 200ms;
-`
-
-const Player = styled.div`
-  position: absolute;
-  top: 25%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
-  background: no-repeat center / 200% url(${rogue});
-  z-index: 1;
-`
-
-const Enemy = Player.extend`
-  top: 50%;
-  background: no-repeat center / 200% url(${monster});
 `
 
 /* PRESENTATION */
@@ -120,10 +96,6 @@ class Row extends React.Component {
 
 class Map extends React.Component {
   static propTypes = {
-    moveUp: PropTypes.func,
-    moveDown: PropTypes.func,
-    moveLeft: PropTypes.func,
-    moveRight: PropTypes.func,
     currentMap: mapType,
     playerX: PropTypes.number,
     playerY: PropTypes.number,
@@ -132,108 +104,12 @@ class Map extends React.Component {
   state = {
     playerX: this.props.playerX,
     playerY: this.props.playerY,
-    enemyX: 9,
-    enemyY: 9,
-    interval: null,
-  }
-
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown)
-    this.setState({ interval: setInterval(this.chase, 500) })
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown)
-    clearInterval(this.state.interval)
-  }
-
-  getEnemyDistance = () => ({
-    x: Math.abs(this.props.playerX - this.state.enemyX),
-    y: Math.abs(this.props.playerY - this.state.enemyY),
-  })
-
-  moveEnemy = (isHorizontalMove, shouldMoveRight, shouldMoveDown) => {
-    const horizontalMove = shouldMoveRight
-      ? this.state.enemyX + 1
-      : this.state.enemyX - 1
-    let verticalMove = shouldMoveDown
-      ? this.state.enemyY + 1
-      : this.state.enemyY - 1
-    if (shouldMoveDown === undefined) {
-      verticalMove =
-        new Chance().coin() === 'heads'
-          ? this.state.enemyY + 1
-          : this.state.enemyY - 1
-    }
-    let newEnemyCoords = isHorizontalMove
-      ? { enemyX: horizontalMove, enemyY: this.state.enemyY }
-      : { enemyX: this.state.enemyX, enemyY: verticalMove }
-    if (isHorizontalMove === undefined) {
-      newEnemyCoords =
-        new Chance().coin() === 'heads'
-          ? { enemyX: horizontalMove, enemyY: this.state.enemyY }
-          : { enemyX: this.state.enemyX, enemyY: verticalMove }
-    }
-    this.setState({ ...newEnemyCoords })
-  }
-
-  chase = () => {
-    const enemyDistance = this.getEnemyDistance()
-    const shouldMoveRight = this.props.playerX > this.state.enemyX
-    const shouldMoveDown = this.props.playerY > this.state.enemyY
-    let isHorizontalMove
-    if (enemyDistance.x !== enemyDistance.y) {
-      isHorizontalMove = enemyDistance.x > enemyDistance.y
-    }
-    this.moveEnemy(isHorizontalMove, shouldMoveRight, shouldMoveDown)
-  }
-
-  runAway = () => {
-    const enemyDistance = this.getEnemyDistance()
-    const shouldMoveRight = this.props.playerX < this.state.enemyX
-    const shouldMoveDown = this.props.playerY < this.state.enemyY
-    let isHorizontalMove
-    if (enemyDistance.x !== enemyDistance.y) {
-      isHorizontalMove = enemyDistance.x < enemyDistance.y
-    }
-    this.moveEnemy(isHorizontalMove, shouldMoveRight, shouldMoveDown)
-  }
-
-  keepDistance = () => {
-    const enemyDistance = this.getEnemyDistance()
-    const distanceToKeep = 2
-    if (enemyDistance.x > distanceToKeep || enemyDistance.y > distanceToKeep) {
-      this.chase()
-    } else if (
-      enemyDistance.x < distanceToKeep &&
-      enemyDistance.y < distanceToKeep
-    ) {
-      this.runAway()
-    }
-  }
-
-  handleKeyDown = e => {
-    const { moveUp, moveDown, moveLeft, moveRight } = this.props
-    if (e.key === 'w' || e.key === 'ArrowUp') {
-      moveUp()
-    }
-    if (e.key === 's' || e.key === 'ArrowDown') {
-      moveDown()
-    }
-    if (e.key === 'a' || e.key === 'ArrowLeft') {
-      moveLeft()
-    }
-    if (e.key === 'd' || e.key === 'ArrowRight') {
-      moveRight()
-    }
   }
 
   render() {
     const { currentMap, playerX, playerY } = this.props
-    const { enemyX, enemyY } = this.state
-    console.log(playerX, playerY)
     return (
-      <Container>
+      <Container x={playerX} y={playerY}>
         {times(currentMap.height, index => (
           <Row
             key={index}
@@ -242,12 +118,6 @@ class Map extends React.Component {
             y={index}
           />
         ))}
-        <PlayerContainer x={playerX} y={playerY}>
-          <Player />
-        </PlayerContainer>
-        <PlayerContainer x={enemyX} y={enemyY}>
-          <Enemy />
-        </PlayerContainer>
       </Container>
     )
   }
@@ -259,11 +129,4 @@ const mapState = state => ({
   currentMap: Selectors.getCurrentMap(state),
 })
 
-const mapActions = {
-  moveUp: PlayerActions.moveUp,
-  moveDown: PlayerActions.moveDown,
-  moveLeft: PlayerActions.moveLeft,
-  moveRight: PlayerActions.moveRight,
-}
-
-export default connect(mapState, mapActions)(Map)
+export default connect(mapState)(Map)
