@@ -3,11 +3,34 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import { connect } from 'react-redux'
 import { times } from 'lodash'
+import { AutoSizer, Grid } from 'react-virtualized'
 
-import grass from 'assets/textures/grass1.png'
-import tree from 'assets/textures/tree1.png'
+import HandleMovement from 'components/HandleMovement'
+import grass from 'assets/textures/lowRes/grass1.png'
+import tree from 'assets/textures/lowRes/tree1.png'
 import * as Selectors from 'state/selectors'
 import { mapType } from 'state/player/reducers'
+
+const StyledGrid = styled(Grid)`
+  border: 1px solid #e0e0e0;
+`
+
+const Cell = styled.span`
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: none;
+  border-right: 1px solid #e0e0e0;
+  border-bottom: 1px solid #e0e0e0;
+  outline: none;
+`
+
+const FocusedCell = Cell.extend`
+  background-color: #e0e0e0;
+  font-weight: bold;
+`
 
 const tileSize = 60
 
@@ -97,35 +120,57 @@ class Row extends React.Component {
 class Map extends React.Component {
   static propTypes = {
     currentMap: mapType,
-    playerX: PropTypes.number,
-    playerY: PropTypes.number,
   }
 
-  state = {
-    playerX: this.props.playerX,
-    playerY: this.props.playerY,
+  cellRenderer = ({ columnIndex, key, rowIndex, x, y, style }) => {
+    const CellComponent =
+      columnIndex === x && rowIndex === y ? FocusedCell : Cell
+
+    return (
+      <CellComponent role="none" key={key} style={style}>
+        {`r:${rowIndex}, c:${columnIndex}`}
+      </CellComponent>
+    )
   }
 
   render() {
-    const { currentMap, playerX, playerY } = this.props
+    const { currentMap } = this.props
     return (
-      <Container x={playerX} y={playerY}>
-        {times(currentMap.height, index => (
-          <Row
-            key={index}
-            width={currentMap.width}
-            collisions={currentMap.collisions}
-            y={index}
-          />
-        ))}
-      </Container>
+      <HandleMovement currentMap={currentMap}>
+        {({ x, y }) => (
+          <div>
+            <AutoSizer disableHeight>
+              {({ width }) => (
+                <StyledGrid
+                  columnWidth={tileSize}
+                  rowHeight={tileSize}
+                  columnCount={currentMap.width}
+                  rowCount={currentMap.height}
+                  width={width}
+                  height={window.innerHeight}
+                  scrollToColumn={x}
+                  scrollToRow={y}
+                  cellRenderer={({ columnIndex, key, rowIndex, style }) =>
+                    this.cellRenderer({
+                      columnIndex,
+                      key,
+                      rowIndex,
+                      x,
+                      y,
+                      style,
+                    })
+                  }
+                />
+              )}
+            </AutoSizer>
+          </div>
+        )}
+      </HandleMovement>
     )
   }
 }
 
 const mapState = state => ({
-  playerX: Selectors.getPlayerX(state),
-  playerY: Selectors.getPlayerY(state),
   currentMap: Selectors.getCurrentMap(state),
 })
 

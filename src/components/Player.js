@@ -1,11 +1,7 @@
 import React from 'react'
-import PropTypes from 'prop-types'
 import styled from 'styled-components'
-import { connect } from 'react-redux'
 
 import rogue from 'assets/rogue.gif'
-import * as Selectors from 'state/selectors'
-import * as PlayerActions from 'state/player/actions'
 
 const tileSize = 60
 
@@ -34,45 +30,7 @@ const Sprite = styled.div`
 `
 
 /* PRESENTATION */
-class Player extends React.Component {
-  static propTypes = {
-    moveUp: PropTypes.func,
-    moveDown: PropTypes.func,
-    moveLeft: PropTypes.func,
-    moveRight: PropTypes.func,
-    playerX: PropTypes.number,
-    playerY: PropTypes.number,
-  }
-
-  state = {
-    playerX: this.props.playerX,
-    playerY: this.props.playerY,
-  }
-
-  componentDidMount() {
-    window.addEventListener('keydown', this.handleKeyDown)
-  }
-
-  componentWillUnmount() {
-    window.removeEventListener('keydown', this.handleKeyDown)
-  }
-
-  handleKeyDown = e => {
-    const { moveUp, moveDown, moveLeft, moveRight } = this.props
-    if (e.key === 'w' || e.key === 'ArrowUp') {
-      moveUp()
-    }
-    if (e.key === 's' || e.key === 'ArrowDown') {
-      moveDown()
-    }
-    if (e.key === 'a' || e.key === 'ArrowLeft') {
-      moveLeft()
-    }
-    if (e.key === 'd' || e.key === 'ArrowRight') {
-      moveRight()
-    }
-  }
-
+export default class Player extends React.Component {
   render() {
     return (
       <PlayerContainer>
@@ -81,17 +39,3 @@ class Player extends React.Component {
     )
   }
 }
-
-const mapState = state => ({
-  playerX: Selectors.getPlayerX(state),
-  playerY: Selectors.getPlayerY(state),
-})
-
-const mapActions = {
-  moveUp: PlayerActions.moveUp,
-  moveDown: PlayerActions.moveDown,
-  moveLeft: PlayerActions.moveLeft,
-  moveRight: PlayerActions.moveRight,
-}
-
-export default connect(mapState, mapActions)(Player)

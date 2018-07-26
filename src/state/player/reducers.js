@@ -41,8 +41,8 @@ const details = (state = initialStateDetails, action) => {
 
 const initialStateLocation = {
   map: maps.starting,
-  x: 0,
-  y: 0,
+  x: Math.round(maps.starting.width / 2),
+  y: Math.round(maps.starting.height / 2),
 }
 
 const location = (state = initialStateLocation, action) => {
