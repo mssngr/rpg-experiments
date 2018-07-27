@@ -1,15 +1,19 @@
-export const starting = {
-  width: 20,
-  height: 20,
-  collisions: [
-    { x: 5, y: 5 },
-    { x: 7, y: 2 },
-    // { x: 60, y: 18 },
-    // { x: 25, y: 75 },
-    // { x: 90, y: 35 },
-  ],
+import Chance from 'chance'
+import { flatMap } from 'lodash'
+
+const generateMap = ({ width, height }) => {
+  const widthArray = new Array(width)
+  const heightArray = new Array(height)
+  const tileArray = flatMap(widthArray, (x, xIndex) =>
+    flatMap(heightArray, (y, yIndex) => [{ x: xIndex, y: yIndex }])
+  )
+  return {
+    width,
+    height,
+    collisions: new Chance().pickset(tileArray, 500),
+  }
 }
 
 export default {
-  starting,
+  starting: generateMap({ width: 100, height: 100 }),
 }

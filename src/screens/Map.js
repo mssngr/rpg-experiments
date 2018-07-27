@@ -6,65 +6,28 @@ import { times } from 'lodash'
 import { AutoSizer, Grid } from 'react-virtualized'
 
 import HandleMovement from 'components/HandleMovement'
+import Player from 'components/Player'
+
 import grass from 'assets/textures/lowRes/grass1.png'
 import tree from 'assets/textures/lowRes/tree1.png'
 import * as Selectors from 'state/selectors'
 import { mapType } from 'state/player/reducers'
 
 const StyledGrid = styled(Grid)`
-  border: 1px solid #e0e0e0;
-`
-
-const Cell = styled.span`
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  border: none;
-  border-right: 1px solid #e0e0e0;
-  border-bottom: 1px solid #e0e0e0;
-  outline: none;
-`
-
-const FocusedCell = Cell.extend`
-  background-color: #e0e0e0;
-  font-weight: bold;
+  ${'' /* border: 1px solid #e0e0e0; */};
 `
 
 const tileSize = 60
 
 /* STYLES */
-const Container = styled.div`
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(
-    calc(-${tileSize * 0.5}px - ${props => props.x * tileSize}px),
-    calc(-${tileSize * 0.5}px - ${props => props.y * tileSize}px)
-  );
-  display: flex;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  background-color: black;
-  transition-property: transform;
-  transition-duration: 200ms;
-`
-
-const RowContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-`
-
-const TileContainer = styled.div`
+const TileContainer = styled.span`
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
   width: ${tileSize}px;
   height: ${tileSize}px;
-  border: 1px solid gray;
+  ${'' /* border: 1px solid gray; */};
   box-sizing: border-box;
   background: no-repeat center / cover url(${grass});
 `
@@ -79,40 +42,16 @@ const Tree = styled.img`
 class Tile extends React.Component {
   static propTypes = {
     isTreeHere: PropTypes.boolean,
+    children: PropTypes.node,
   }
 
   render() {
-    const { isTreeHere } = this.props
+    const { isTreeHere, children, ...otherProps } = this.props
     return (
-      <TileContainer src={grass}>
+      <TileContainer src={grass} {...otherProps}>
+        {children}
         {isTreeHere && <Tree src={tree} />}
       </TileContainer>
-    )
-  }
-}
-
-class Row extends React.Component {
-  static propTypes = {
-    width: PropTypes.number.isRequired,
-    y: PropTypes.number.isRequired,
-    collisions: PropTypes.array,
-  }
-
-  render() {
-    const { width, y, collisions } = this.props
-    return (
-      <RowContainer>
-        {times(width, index => {
-          if (
-            collisions.find(
-              collision => collision.x === index && collision.y === y
-            )
-          ) {
-            return <Tile key={index} x={index} y={y} isTreeHere />
-          }
-          return <Tile key={index} x={index} y={y} />
-        })}
-      </RowContainer>
     )
   }
 }
@@ -122,14 +61,18 @@ class Map extends React.Component {
     currentMap: mapType,
   }
 
-  cellRenderer = ({ columnIndex, key, rowIndex, x, y, style }) => {
-    const CellComponent =
-      columnIndex === x && rowIndex === y ? FocusedCell : Cell
-
+  cellRenderer = ({ columnIndex, key, rowIndex, x, y, collisions, style }) => {
     return (
-      <CellComponent role="none" key={key} style={style}>
-        {`r:${rowIndex}, c:${columnIndex}`}
-      </CellComponent>
+      <Tile
+        role="none"
+        key={key}
+        style={style}
+        isTreeHere={collisions.find(
+          collision => collision.x === columnIndex && collision.y === rowIndex
+        )}
+      >
+        {columnIndex === x && rowIndex === y && <Player />}
+      </Tile>
     )
   }
 
@@ -157,6 +100,7 @@ class Map extends React.Component {
                       rowIndex,
                       x,
                       y,
+                      collisions: currentMap.collisions,
                       style,
                     })
                   }

@@ -24,7 +24,7 @@ class App extends Component {
           }}
         >
           <Map />
-          <Player />
+          {/* <Player /> */}
         </div>
       </Provider>
     )

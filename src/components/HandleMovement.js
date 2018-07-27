@@ -86,7 +86,6 @@ export default class HandleMovement extends React.PureComponent {
 
   handleKeyDown = e => {
     console.log(e.key)
-    e.preventDefault()
     if (e.key === 'w' || e.key === 'ArrowUp') {
       this.moveUp()
     }
