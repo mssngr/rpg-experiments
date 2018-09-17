@@ -2,9 +2,11 @@ import React, { Component } from 'react'
 import { Provider } from 'react-redux'
 import { createStore } from 'redux'
 
-import Map from 'screens/Map'
+import Map from 'screens/Map3'
 import Player from 'components/Player'
 import reducer from 'state/reducers'
+
+import maps from 'assets/maps'
 
 export const store = createStore(
   reducer,
@@ -20,11 +22,11 @@ class App extends Component {
             position: 'relative',
             width: '100vw',
             height: '100vh',
-            overflow: 'show',
+            overflow: 'hidden',
           }}
         >
-          <Map />
-          {/* <Player /> */}
+          <Map currentMap={maps.starting} />
+          <Player />
         </div>
       </Provider>
     )

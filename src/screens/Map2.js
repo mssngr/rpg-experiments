@@ -2,7 +2,6 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import { connect } from 'react-redux'
-import { times } from 'lodash'
 import { AutoSizer, Grid } from 'react-virtualized'
 
 import HandleMovement from 'components/HandleMovement'
@@ -91,6 +90,8 @@ class Map extends React.Component {
                   rowCount={currentMap.height}
                   width={width}
                   height={window.innerHeight}
+                  overscanColumnCount={10}
+                  overscanRowCount={10}
                   scrollToColumn={x}
                   scrollToRow={y}
                   cellRenderer={({ columnIndex, key, rowIndex, style }) =>
